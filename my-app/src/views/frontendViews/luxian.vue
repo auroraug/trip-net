@@ -6,7 +6,12 @@
                 <img :src="`${item.url}`" style="width: 600px;height: 300px;" alt="">
             </el-carousel-item>
         </el-carousel>
-        <img src="../../../image/lvyou.jpg" style="height: 300px;margin-left: 20px;" alt="">
+        <div>
+            <el-input size="mini" type="text" id="suggestId" v-model="input" placeholder="请输入地址" clearable style="width: 300px;margin-left: 10px;"></el-input>
+            <div id="l-map" class="map" style="width: 538px;height: 275px;margin-left: 20px;">
+            <div id="searchResultPanel" style="border:1px solid #C0C0C0;width:150px;height:auto; display:none;"></div>
+            </div>
+        </div>
     </div>
     <div style="margin-top: 20px;">
         <el-row>
@@ -35,6 +40,7 @@ import { getLine } from '../../api'
 export default {
     data() {
         return {
+            input: '',
             topD: [
                 
                 {
@@ -181,7 +187,45 @@ export default {
         getLine().then((data) => {
             const lineD = data.data
             this.lineD = lineD
+        });
+        var map = new BMap.Map("l-map");
+	    map.centerAndZoom("北京",12);                   // 初始化地图,设置城市和地图级别。
+        map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
+        //添加地图类型控件
+    
+        map.addControl(
+        new BMap.MapTypeControl({
+            mapTypes: [BMAP_NORMAL_MAP, BMAP_HYBRID_MAP],
         })
+        );
+    
+        var ac = new BMap.Autocomplete(    //建立一个自动完成的对象
+        {"input" : "suggestId"
+        ,"location" : map
+        });
+
+        ac.addEventListener("onhighlight", function(e) {  //鼠标放在下拉列表上的事件
+        });
+
+        // var myValue;
+        ac.addEventListener("onconfirm", function(e) {    //鼠标点击下拉列表后的事件
+        var _value = e.item.value;
+        var myValue = _value.province +  _value.city +  _value.district +  _value.street +  _value.business;
+        setPlace(myValue)
+        });
+        function setPlace(value) {
+        //this.map.clearOverlays(); //清除地图上所有覆盖物
+        // 创建一个检索对象
+        var local = new BMap.LocalSearch(map, {
+            //智能搜索
+            onSearchComplete: function () {
+            var getpo = local.getResults().getPoi(0).point; //获取第一个智能搜索的结果
+            map.centerAndZoom(getpo, 18);
+            map.addOverlay(new BMap.Marker(getpo)); //添加标注
+            },
+        });
+        local.search(value);
+        }
     },
     computed: {
         data() {
